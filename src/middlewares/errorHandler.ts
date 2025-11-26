@@ -3,9 +3,10 @@ import type { Request, Response, NextFunction } from "express";
 
 export const errorHandler = (
   err: ResponseError,
-  req: Request,
+  _req: Request,
   res: Response,
-  next: NextFunction
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _next: NextFunction
 ) => {
   const status = err.status || 500;
 
