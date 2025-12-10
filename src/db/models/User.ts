@@ -1,18 +1,31 @@
-import { Schema, model, type Document} from "mongoose";
+import { Schema, model, type Document, Types} from "mongoose";
 import { emailRegex } from "../../constants/auth.constants.js";
-import { handleSaveError, setUpdateSettings } from "../Hooks.js";
+import { handleSaveError, setUpdateSettings } from "../hooks.js";
 
+
+export interface UserProfile {
+  website?: string;
+  about?: string;
+  avatar?: string;
+}
 export interface UserDocument extends Document {
   email: string;
-  fullName: string;
+  fullname: string;
   username: string;
   password: string;
   verify: boolean;
   accessToken: string | null;
   refreshToken: string | null;
+  profile: UserProfile;
+  following: Types.ObjectId[];
+  followers: Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
+
+const DEFAULT_AVATAR =
+  process.env.DEFAULT_AVATAR_URL ||
+  "https://your-cdn.com/images/default-avatar.png";
 
 
 const userSchema= new Schema<UserDocument>({
@@ -22,7 +35,7 @@ const userSchema= new Schema<UserDocument>({
         unique: true,
         required:true,
     },
-    fullName: {
+    fullname: {
       type: String,
       required: true,
       trim: true,
@@ -37,6 +50,24 @@ const userSchema= new Schema<UserDocument>({
         type: String,
         required:true,
     },
+
+    profile: {
+      website: {
+        type: String,
+        default: "",
+        trim: true,
+      },
+      about: {
+        type: String,
+        default: "",
+        trim: true,
+      },
+      avatar: {
+        type: String,
+        default: DEFAULT_AVATAR,
+      },
+    },
+
     accessToken: {
         type: String,
         default: null,
@@ -49,13 +80,28 @@ const userSchema= new Schema<UserDocument>({
       type: Boolean,
       default: false,
     },
+
+    following: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "user",
+        default: [],
+      },
+    ],
+    followers: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "user",
+        default: [],
+      },
+    ],
 }, {versionKey: false, timestamps: true});
 
 userSchema.post("save", handleSaveError);
 
-userSchema.pre("findOneAndUpdate", setUpdateSettings);
+userSchema.pre("findOneAndUpdate" as any, setUpdateSettings);
 
-userSchema.post("findOneAndUpdate", handleSaveError);
+userSchema.post("findOneAndUpdate" as any, handleSaveError);
 
 
 const User= model<UserDocument>("user", userSchema)

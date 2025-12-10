@@ -2,8 +2,8 @@ import mongoose from "mongoose";
 
 const {MONGODB_URI} = process.env;
 
-if(!MONGODB_URI) {
-    throw new Error("MONGODB_URI not deefine in environment variables");
+if (!MONGODB_URI) {
+    throw new Error("MONGODB_URI not defined in environment variables");
 }
 
 const connectDatabase = async(): Promise<void> => {
@@ -16,7 +16,7 @@ const connectDatabase = async(): Promise<void> => {
             console.log(`Error connect database: ${error.message}`);
         }
         else {
-            console.log("Unkknown error connect database")
+            console.log("Unknown error connect database")
         }
         
         throw error;

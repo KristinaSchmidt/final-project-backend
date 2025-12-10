@@ -18,8 +18,8 @@ export const handleSaveError = (
   next();
 };
 
-export const setUpdateSettings = function (this: any, next: MongooseNext) {
+export const setUpdateSettings = function (this: any) {
     this.options.new = true;
     this.options.runValidators = true;
-    next();
+
 };

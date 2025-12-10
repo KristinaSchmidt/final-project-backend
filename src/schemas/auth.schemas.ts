@@ -44,3 +44,11 @@ export const registerSchema = z.object({
 });
 
 export type RegisterPayload = z.infer<typeof registerSchema>;
+
+
+
+export const refreshSchema = z.object({
+  refreshToken: z.string().min(10),
+});
+
+export type RefreshPayload = z.infer<typeof refreshSchema>;

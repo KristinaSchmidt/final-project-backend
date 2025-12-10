@@ -3,6 +3,7 @@ import cors from "cors";
 import notFoundHandler from "./middlewares/notFoundHandler.js";
 import {errorHandler} from "./middlewares/errorHandler.js";
 import authRouter from "./routers/auth.router.js";
+import userRouter from "./routers/user.router.js";
 
 
 const startServer=(): void => {
@@ -12,6 +13,9 @@ const startServer=(): void => {
 
 
     app.use("/api/auth", authRouter);
+
+    app.use("/api/users", userRouter);
+    
     app.use(notFoundHandler);
     app.use(errorHandler)
 
