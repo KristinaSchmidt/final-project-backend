@@ -3,20 +3,18 @@ import { generateToken } from "../utils/jwt.js";
 import User, { type UserDocument } from "../db/models/User.js";
 import HttpError from "../utils/HttpError.js";
 import type { RegisterPayload, LoginPayload } from "../schemas/auth.schemas.js";
-import { Types } from "mongoose";
-
-
 
 export interface LoginResult {
   accessToken: string;
   refreshToken: string;
   user: {
+    _id: string;
     email: string;
     fullname: string;
     username: string;
+    avatar: string | null;
   };
 }
-
 
 interface FindUserQuery {
   _id?: string;
@@ -29,25 +27,15 @@ export const findUser = (query: FindUserQuery): Promise<UserDocument | null> => 
 };
 
 
-export const createTokens = (id: Types.ObjectId | string) => {
-  const userId = typeof id === "string" ? id : id.toString();
 
-  const accessToken: string = generateToken(
-    { id: userId },
-    { expiresIn: "15m" },
-  );
-  const refreshToken: string = generateToken(
-    { id: userId },
-    { expiresIn: "7d" },
-  );
+const createTokens = (userId: string) => {
+  const payload = { id: userId };
 
-  return {
-    accessToken,
-    refreshToken,
-  };
+  const accessToken = generateToken(payload, { expiresIn: "15m" });
+  const refreshToken = generateToken(payload, { expiresIn: "7d" });
+
+  return { accessToken, refreshToken };
 };
-
-
 
 export const register = async (
   payload: RegisterPayload
@@ -67,9 +55,6 @@ export const register = async (
   });
 };
 
-
-
-
 export const login = async ({
   email,
   password,
@@ -81,7 +66,8 @@ export const login = async ({
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) throw HttpError(401, "Email or password invalid");
 
-  const { accessToken, refreshToken } = createTokens(user._id);
+
+  const { accessToken, refreshToken } = createTokens(user._id.toString());
 
   user.accessToken = accessToken;
   user.refreshToken = refreshToken;
@@ -91,9 +77,11 @@ export const login = async ({
     accessToken,
     refreshToken,
     user: {
+      _id: user._id.toString(),
       email: user.email,
       fullname: user.fullname,
       username: user.username,
+      avatar: user.profile?.avatar || null,
     },
   };
 };
@@ -101,17 +89,13 @@ export const login = async ({
 export const refresh = async (token: string) => {
   const user = await User.findOne({ refreshToken: token });
   if (!user) throw HttpError(401, "Invalid refresh token");
-
   const tokens = createTokens(user._id.toString());
-
   user.accessToken = tokens.accessToken;
   user.refreshToken = tokens.refreshToken;
   await user.save();
 
   return tokens;
 };
-
-
 
 export const logout = async (userId: string) => {
   await User.findByIdAndUpdate(userId, {

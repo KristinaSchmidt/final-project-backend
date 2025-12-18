@@ -1,15 +1,20 @@
-import { UserDocument } from "../db/models/User.ts";
-
-// declare module "express-serve-static-core" {
-//   interface Request {
-//     user?: UserDocument;
-//   }
-// }
+import { Types } from "mongoose";
 
 declare global {
   namespace Express {
+    interface User {
+      _id: Types.ObjectId;
+      email?: string;
+      username?: string;
+      fullname?: string;
+      avatar?: string;
+      following?: Types.ObjectId[];
+    }
+
     interface Request {
-      user?: UserDocument;
+      user?: User;
     }
   }
 }
+
+export {};

@@ -1,47 +1,54 @@
-import {Schema, model, Document, Types} from "mongoose";
-
+import { Schema, model, type Document, Types } from "mongoose";
 import { handleSaveError, setUpdateSettings } from "../hooks.js";
 
-interface Post {
+export interface PostModel {
   author: Types.ObjectId;
-  image: string;
-  caption: string;
+  imageUrl: string;
+  text: string;
   likes: Types.ObjectId[];
   comments: Types.ObjectId[];
 }
 
-export type PostDocument = Post & Document;
+export type PostDocument = PostModel & Document;
 
-const postSchema = new Schema<PostDocument>({
-  author: {
-    type: Schema.Types.ObjectId,
-    ref: "user",
-    required: true,
+const postSchema = new Schema<PostDocument>(
+  {
+    author: {
+      type: Schema.Types.ObjectId,
+      ref: "user",
+      required: true,
+    },
+    imageUrl: {
+      type: String,
+      required: true,
+    },
+    text: {
+      type: String,
+      default: "",
+      maxlength: 200,
+      trim: true,
+    },
+    likes: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "user",
+        default: [],
+      },
+    ],
+    comments: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "comment",
+        default: [],
+      },
+    ],
   },
-  image: {
-    type: String,
-    required: true,
-  },
-  caption: {
-    type: String,
-    required: true,
-  },
-  likes: [{
-    type: Schema.Types.ObjectId,
-    ref: "user",
-  }],
-  comments: [{
-    type: Schema.Types.ObjectId,
-    ref: "comment",
-  }]
-}, {versionKey: false, timestamps: true});
+  { versionKey: false, timestamps: true }
+);
 
 postSchema.post("save", handleSaveError);
-
 postSchema.pre("findOneAndUpdate" as any, setUpdateSettings);
-
 postSchema.post("findOneAndUpdate", handleSaveError);
 
 const Post = model<PostDocument>("post", postSchema);
-
 export default Post;

@@ -1,12 +1,26 @@
-import { Router } from "express";
-import { getUserProfile, getMyProfile } from "../controllers/user.controller.js";
+import express from "express";
 import authenticate from "../middlewares/authenticate.js";
+import upload from "../middlewares/upload.js";
+
+import {
+  getMyProfileController,
+  getUserProfileController,
+  updateMyProfileController,
+  searchUsersController,
+  toggleFollowController,
+} from "../controllers/user.controller.js";
+
+const userRouter = express.Router();
+
+userRouter.get("/", authenticate, searchUsersController);
+
+userRouter.get("/me", authenticate, getMyProfileController);
+
+userRouter.patch("/me", authenticate, upload.single("avatar"), updateMyProfileController);
 
 
-const userRouter = Router();
+userRouter.post("/:id/follow", authenticate, toggleFollowController);
 
-userRouter.get("/me", authenticate, getMyProfile);
-
-userRouter.get("/:id", getUserProfile);
+userRouter.get("/:id", authenticate, getUserProfileController);
 
 export default userRouter;

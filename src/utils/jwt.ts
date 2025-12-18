@@ -1,5 +1,5 @@
 import jwt, { SignOptions } from "jsonwebtoken";
-// import { ObjectId } from "mongoose";
+
 
 type JWTPayload = string | object | Buffer;
 type JWTSettings = SignOptions | undefined;
@@ -15,7 +15,9 @@ const {JWT_SECRET} = process.env;
 if (!JWT_SECRET) {
   throw new Error("JWT_SECRET not defined in environment variables");
 }
-//Token erstellen //
+
+
+
 export const generateToken = (
   payload: JWTPayload,
   settings: JWTSettings,
@@ -23,7 +25,10 @@ export const generateToken = (
   return jwt.sign(payload, JWT_SECRET, settings);
 };
 
-// ---- token verify prüfen ----
+
+
+
+
 export const verifyToken = (token: string): VerifyTokenResult => {
   try {
     const data = jwt.verify(token, JWT_SECRET);

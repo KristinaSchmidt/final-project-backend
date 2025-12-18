@@ -2,8 +2,7 @@ import { Request, Response, NextFunction, RequestHandler } from "express";
 import { register, login, logout, refresh,  type LoginResult } from "../services/auth.service.js";
 import validateBody from "../utils/validateBody.js";
 import { registerSchema,loginSchema, type RegisterPayload, type LoginPayload, refreshSchema, RefreshPayload} from "../schemas/auth.schemas.js";
-// import { AuthRequest } from "../types/interfaces.js";
-import { createTokens } from "../services/auth.service.js";
+import HttpError from "../utils/HttpError.js";
 
 
 export const registerController: RequestHandler = async (
@@ -48,15 +47,27 @@ export const loginController: RequestHandler = async (
 
 
 
-export const getCurrentController = async (req, res) => {
-  res.json({
-    user: {
-      _id: req.user._id,
-      email: req.user.email,
-      fullname: req.user.fullname,
-      username: req.user.username,
+export const getCurrentController: RequestHandler = (req, res, next) => {
+  try {
+    if (!req.user) {
+      throw HttpError(401, "Not authorized");
     }
-  });
+
+    // @ts-ignore
+    const user = req.user;
+
+    res.json({
+      _id: user._id,
+      email: user.email,
+      fullname: user.fullname,
+      username: user.username,
+      profile: user.profile,
+      followers: user.followers ?? [],
+      following: user.following ?? [],
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 

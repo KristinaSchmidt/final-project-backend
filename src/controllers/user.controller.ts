@@ -1,101 +1,103 @@
-import { Request, Response, NextFunction } from "express";
-import User from "../db/models/User.js";
-import Post from "../db/models/Post.js";
+import type { Request, Response, NextFunction } from "express";
 import HttpError from "../utils/HttpError.js";
+import {
+  getProfileDataByUserId,
+  updateMyProfileByUserId,
+  searchUsers,
+  toggleFollowByUserIds,
+} from "../services/user.service.js";
 
-/**
- * GET /users/:id
- * Öffentliches Profil eines anderen Users
- */
-export const getUserProfile = async (
+export const getUserProfileController = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const { id } = req.params;
+    const userIdFromUrl = req.params.id;
+    if (!userIdFromUrl) throw HttpError(400, "User id is required");
 
-    const user = await User.findById(id).select(
-      "-password -accessToken -refreshToken"
-    );
-
-    if (!user) {
-      throw HttpError(404, "User not found");
-    }
-
-    const posts = await Post.find({ author: user._id })
-      .select("_id imageUrl createdAt")
-      .sort({ createdAt: -1 });
-
-    res.json({
-      user: {
-        _id: user._id,
-        username: user.username,
-        fullname: user.fullname,
-        email: user.email,
-        website: user.profile?.website || "",
-        about: user.profile?.about || "",
-        avatar: user.profile?.avatar || "",
-      },
-      stats: {
-        posts: posts.length,
-        followers: user.followers?.length || 0,
-        following: user.following?.length || 0,
-      },
-      posts,
-    });
+    const viewerId = req.user?._id ? String(req.user._id) : null;
+    const profileData = await getProfileDataByUserId(userIdFromUrl, viewerId);
+    res.json(profileData);
   } catch (error) {
     next(error);
   }
 };
 
-/**
- * GET /users/me
- * Profil des eingeloggten Users
- */
-export const getMyProfile = async (
+export const getMyProfileController = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    // _id, weil du in authenticate folgendes setzt:
-    // req.user = { _id, email, fullname }
-    const userId = req.user?._id;
+    const myUserId = req.user?._id;
+    if (!myUserId) throw HttpError(401, "Not authorized");
 
-    if (!userId) {
-      throw HttpError(401, "Not authorized");
+    const profileData = await getProfileDataByUserId(String(myUserId), String(myUserId));
+    res.json(profileData);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateMyProfileController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const myUserId = req.user?._id;
+    if (!myUserId) throw HttpError(401, "Not authorized");
+
+    const { username, fullname, website, about } = req.body;
+
+    const updateData: any = { username, fullname, website, about };
+
+    if (req.file) {
+      const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
+      updateData.avatar = `${baseUrl}/images/${req.file.filename}`;
     }
 
-    const user = await User.findById(userId).select(
-      "-password -accessToken -refreshToken"
-    );
+    const updatedData = await updateMyProfileByUserId(String(myUserId), updateData);
+    res.json(updatedData);
+  } catch (error) {
+    next(error);
+  }
+};
 
-    if (!user) {
-      throw HttpError(404, "User not found");
-    }
+export const searchUsersController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const search = String(req.query.search || "").trim();
+    if (!search) return res.json([]);
 
-    const posts = await Post.find({ author: user._id })
-      .select("_id imageUrl createdAt")
-      .sort({ createdAt: -1 });
+    const users = await searchUsers(search);
+    res.json(users);
+  } catch (error) {
+    next(error);
+  }
+};
 
-    res.json({
-      user: {
-        _id: user._id,
-        username: user.username,
-        fullname: user.fullname,
-        email: user.email,
-        website: user.profile?.website || "",
-        about: user.profile?.about || "",
-        avatar: user.profile?.avatar || "",
-      },
-      stats: {
-        posts: posts.length,
-        followers: user.followers?.length || 0,
-        following: user.following?.length || 0,
-      },
-      posts,
-    });
+
+
+
+export const toggleFollowController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const myUserId = req.user?._id;
+    if (!myUserId) throw HttpError(401, "Not authorized");
+
+    const targetId = req.params.id;
+    if (!targetId) throw HttpError(400, "Target user id is required");
+
+    const result = await toggleFollowByUserIds(String(myUserId), String(targetId));
+    res.json(result);
   } catch (error) {
     next(error);
   }

@@ -1,0 +1,54 @@
+import { Schema, model, Types } from "mongoose";
+import { handleSaveError, setUpdateSettings } from "../hooks.js";
+
+export type NotificationType = "like" | "comment" | "follow";
+
+export interface NotificationDocument {
+  recipient: Types.ObjectId;
+  actor: Types.ObjectId;
+  type: NotificationType;
+
+  post?: Types.ObjectId;
+  commentText?: string;
+
+  isRead: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const notificationSchema = new Schema<NotificationDocument>(
+  {
+    recipient: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
+    actor: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    type: {
+      type: String,
+      enum: ["like", "comment", "follow"],
+      required: true,
+    },
+
+    post: { type: Schema.Types.ObjectId, ref: "Post" },
+    commentText: { type: String },
+
+    isRead: { type: Boolean, default: false },
+  },
+  { timestamps: true, versionKey: false }
+);
+
+
+notificationSchema.pre("findOneAndUpdate", setUpdateSettings);
+notificationSchema.post("save", handleSaveError);
+notificationSchema.post("findOneAndUpdate", handleSaveError);
+
+export const Notification = model<NotificationDocument>("Notification", notificationSchema);
+
+export default Notification;

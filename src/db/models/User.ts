@@ -23,9 +23,10 @@ export interface UserDocument extends Document {
   updatedAt: Date;
 }
 
+const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
+
 const DEFAULT_AVATAR =
-  process.env.DEFAULT_AVATAR_URL ||
-  "https://your-cdn.com/images/default-avatar.png";
+  process.env.DEFAULT_AVATAR_URL || `${BASE_URL}/images/default-avatar.jpg`;
 
 
 const userSchema= new Schema<UserDocument>({
