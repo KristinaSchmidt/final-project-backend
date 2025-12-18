@@ -1,16 +1,29 @@
+import User from "../db/models/User.js";
+import Post from "../db/models/Post.js";
 import { Types } from "mongoose";
 import { Notification, NotificationType } from "../db/models/Notification.js";
 
 export const listNotifications = async (recipientId: string, limit = 50) => {
+  if (!Types.ObjectId.isValid(recipientId)) {
+    return { notifications: [] };
+  }
+
   const recipient = new Types.ObjectId(recipientId);
 
   const docs = await Notification.find({ recipient })
     .sort({ createdAt: -1 })
     .limit(limit)
-    .populate("actor", "username avatarUrl avatar image photo")
-    .populate("post", "imageUrl image photo coverUrl")
+    .populate({
+      path: "actor",
+      select: "username avatarUrl avatar image photo",
+      strictPopulate: false,
+    })
+    .populate({
+      path: "post",
+      select: "imageUrl image photo coverUrl",
+      strictPopulate: false,
+    })
     .lean();
-
 
   const notifications = docs.map((n: any) => {
     const actor = n.actor || {};
@@ -35,7 +48,6 @@ export const listNotifications = async (recipientId: string, limit = 50) => {
           }
         : undefined,
 
-
       commentText: n.commentText || "",
     };
   });
@@ -52,9 +64,7 @@ export const createNotification = async (args: {
 }) => {
   const { recipientId, actorId, type, postId, commentText } = args;
 
-
   if (recipientId === actorId) return null;
-
 
   if (type === "like" && postId) {
     const exists = await Notification.findOne({
@@ -67,15 +77,16 @@ export const createNotification = async (args: {
     if (exists) return exists;
   }
 
-  const notif = await Notification.create({
+  const payload: any = {
     recipient: recipientId,
     actor: actorId,
     type,
-    post: postId,
-    commentText,
-  });
+  };
 
-  return notif;
+  if (postId) payload.post = postId;
+  if (commentText) payload.commentText = commentText;
+
+  return Notification.create(payload);
 };
 
 export const removeLikeNotification = async (args: {
